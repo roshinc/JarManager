@@ -26,55 +26,63 @@ public class PomGenerator {
     /**
      * Generates POM entries for JAR files in the specified directory and writes them to the target file.
      *
-     * @param directoryPath        The directory containing the JAR files.
-     * @param targetFileName       The name of the target file to write the POM entries to.
-     * @param createAdditionalFile Whether to create an additional file with URLs for the dependencies.
-     *                             If true, an additional file will be created with the same name as the target file but with the suffix ".additional".
+     * @param directoryPath                     The directory containing the JAR files.
+     * @param targetFileName                    The name of the target file to write the POM entries to.
+     * @param createAdditionalFile              Whether to create an additional file with URLs for the dependencies.
+     *                                          If true, an additional file will be created with the same name as the
+     *                                          target file but with the suffix ".additional".
+     * @param additionalFileEmailFriendlyFormat Whether to create the additional file in an email-friendly format. Only used if
+     *                                          {@code createAdditionalFile} is true.
      * @throws IOException If an I/O error occurs while reading the JAR files or writing to the target file.
      */
-    public static void generatePomEntries(Path directoryPath, Path targetFileName, boolean createAdditionalFile) throws IOException {
+    public static void generatePomEntries(Path directoryPath, Path targetFileName, boolean createAdditionalFile,
+                                          boolean additionalFileEmailFriendlyFormat) throws IOException {
         File dir = directoryPath.toFile();
         File[] files = dir.listFiles((d, name) -> name.endsWith(".jar"));
 
         // Create the path for the additional file even though it may not be used
         Path additionalFilePath = null;
 
-        try (BufferedWriter writer = Files.newBufferedWriter(targetFileName)) {
-            writer.write("<dependencies>\n");
-
-            if (files != null) {
+        if (files != null) {
+            try (BufferedWriter writer = Files.newBufferedWriter(targetFileName)) {
+                writer.write("<dependencies>\n");
 
                 if (createAdditionalFile) {
-                    additionalFilePath = targetFileName.resolveSibling(Paths.get(CommonUtils.getFileNameWithoutExtension(targetFileName) + ".additional"));
+                    additionalFilePath = targetFileName.resolveSibling(
+                            Paths.get(CommonUtils.getFileNameWithoutExtension(targetFileName) + ".additional")
+                    );
                     try (BufferedWriter additionalWriter = Files.newBufferedWriter(additionalFilePath)) {
-                        writeEntries(writer, additionalWriter, files);
+                        writeEntries(writer, additionalWriter, files, additionalFileEmailFriendlyFormat);
                     } catch (IOException e) {
                         logger.error("An error occurred while creating the additional file: {}", additionalFilePath, e);
                     }
                 } else {
-                    writeEntries(writer, null, files);
+                    writeEntries(writer, null, files, additionalFileEmailFriendlyFormat);
                 }
-            } else {
-                logger.warn("No JAR files found in the directory: {}", directoryPath);
+                writer.write("</dependencies>\n");
             }
-
-            writer.write("</dependencies>\n");
-        }
-
-        AnsiLogger.success("POM entries written to: {}", targetFileName.toAbsolutePath());
-        if (createAdditionalFile) {
-            AnsiLogger.success("Additional information written to: {}", additionalFilePath.toAbsolutePath());
+            AnsiLogger.success("POM entries written to: {}", targetFileName.toAbsolutePath());
+            if (createAdditionalFile) {
+                AnsiLogger.success("Additional information written to: {}", additionalFilePath.toAbsolutePath());
+            }
+        } else {
+            AnsiLogger.warning(logger, "No JAR files found in the directory: {}", directoryPath);
         }
     }
 
     /**
      * Generates POM entries for the {@code File}s in the {@code files} array and writes them to the specified writer(s).
      *
-     * @param writer           The writer to write the POM entries to.
-     * @param additionalWriter The writer to write the additional entries to, or null if no additional file is being created.
-     * @param files            The array of {@code File}s to generate POM entries for.
+     * @param writer                            The writer to write the POM entries to.
+     * @param additionalWriter                  The writer to write the additional entries to, or null if no additional file is
+     *                                          being created.
+     * @param files                             The array of {@code File}s to generate POM entries for.
+     * @param additionalFileEmailFriendlyFormat Whether to create the additional file in an email-friendly format.
+     *                                          Only used if {@code additionalWriter} is not null.
+     * @throws IOException If an I/O error occurs while writing to the writer(s).
      */
-    private static void writeEntries(BufferedWriter writer, BufferedWriter additionalWriter, File[] files) throws IOException {
+    private static void writeEntries(BufferedWriter writer, BufferedWriter additionalWriter, File[] files,
+                                     boolean additionalFileEmailFriendlyFormat) throws IOException {
         boolean showSourcesSkippedMessage = false;
         for (File file : files) {
             if (file.getName().contains("sources")) {
@@ -89,7 +97,7 @@ public class PomGenerator {
                     String version = props.getProperty("version");
                     writePomEntry(writer, groupId, artifactId, version);
                     if (additionalWriter != null) {
-                        writeAdditionalEntry(additionalWriter, groupId, artifactId, version);
+                        writeAdditionalEntry(additionalWriter, groupId, artifactId, version, additionalFileEmailFriendlyFormat);
                     }
                 }
             }
@@ -121,22 +129,33 @@ public class PomGenerator {
 
     /**
      * Writes an additional entry with the URL of the dependency to the specified writer.
+     * If emailFriendlyFormat is true, the entry format is more detailed and includes a URL
+     * with a separator for clarity in emails. If false, the format is concise, suitable for file storage.
      *
-     * @param additionalWriter The writer to write the additional entry to.
-     * @param groupId          The group ID of the dependency.
-     * @param artifactId       The artifact ID of the dependency.
-     * @param version          The version of the dependency.
+     * @param writer              The writer to write the additional entry to.
+     * @param groupId             The group ID of the dependency.
+     * @param artifactId          The artifact ID of the dependency.
+     * @param version             The version of the dependency.
+     * @param emailFriendlyFormat Whether to create the additional file in an email-friendly format.
      * @throws IOException If an I/O error occurs while writing to the writer.
      */
-    protected static void writeAdditionalEntry(BufferedWriter additionalWriter, String groupId, String artifactId, String version) throws IOException {
-        // Get the base URL of the Maven repository from config
+    protected static void writeAdditionalEntry(BufferedWriter writer, String groupId, String artifactId,
+                                               String version, boolean emailFriendlyFormat) throws IOException {
         String baseUrl = Config.getInstance().getMavenBaseUrl();
-        // Create a formatted entry with the groupId, artifactId, and version
-        String formattedEntry = String.format("%s:%s:%s", groupId, artifactId, version);
-        String url = String.format("%s%s/%s/%s/%s-%s.jar", baseUrl,
+        String artifactUrl = String.format("%s%s/%s/%s/%s-%s.jar", baseUrl,
                 groupId.replace('.', '/'), artifactId, version, artifactId, version);
-        additionalWriter.write(formattedEntry + " " + url + "\n");
+
+        if (emailFriendlyFormat) {
+            String emailFormattedEntry = String.format("Group ID: %s\nArtifact ID: %s\nVersion: %s\nURL: %s",
+                    groupId, artifactId, version, artifactUrl);
+            String separator = "--------------------------------------------------------";
+            writer.write(emailFormattedEntry + "\n" + separator + "\n");
+        } else {
+            String conciseEntry = String.format("%s:%s:%s", groupId, artifactId, version);
+            writer.write(conciseEntry + "\n");
+        }
     }
+
 
     /**
      * Extracts POM properties from the specified JAR file.

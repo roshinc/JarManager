@@ -24,6 +24,16 @@ Options:
 * `--config <config_file_path>`: Specify the path to the configuration file (optional).
 * `--generate-artifact-list`: Generate an additional text file with the groupId:artifactName:version for all the JARs (
   optional).
+* `--email-friendly-format`: When used in conjunction with --generate-artifact-list, entries in the additional text file
+  are formatted in a more readable, email-friendly manner. This format includes details such as group ID, artifact ID,
+  version, and a URL to the artifact. Each entry is separated by a separator to enhance clarity when viewed
+  in an email (optional).
+
+Notes:
+
+* Source JARs are not included in the POM entries. If there is source JAR is present in the folder, a warning will be
+  displayed. and it will be skipped.
+* If there are JARs with no pom information, a warning will be displayed per JAR, and the jar will be skipped.
 
 ### 2. Download JARs
 
@@ -82,19 +92,25 @@ shared_libs_file_path=/path/to/shared/libs/file.txt
 
 Example Usage:
 
-1. Generate POM entries for JARs in a folder:
+1. Generate POM entries for JARs in a folder, and also generate an artifact list:
 
 ```shell
 jarmanager generate-pom /path/to/jar/folder /path/to/output/file.xml --generate-artifact-list
 ```
 
-2. Download JARs listed in a file:
+1. Generate POM entries for JARs in a folder, and also generate an email-friendly artifact list:
+
+```shell
+jarmanager generate-pom /path/to/jar/folder /path/to/output/file.xml --generate-artifact-list --email-friendly-format
+```
+
+3. Download JARs listed in a file:
 
 ```shell
 jarmanager download /path/to/input/file.txt /path/to/target/folder --source-folder /path/to/source/folder --only-update --changes-file /path/to/changes/file.txt
 ```
 
-3. Generate user libraries XML:
+4. Generate user libraries XML:
 
 ```shell
 jarmanager generate-userlibs /path/to/output/userlibs.xml --download --dont-overwrite --shared-libs /path/to/shared/libs/file.txt

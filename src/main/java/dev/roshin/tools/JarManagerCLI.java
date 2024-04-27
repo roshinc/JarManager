@@ -83,6 +83,13 @@ public class JarManagerCLI implements Callable<Integer> {
         @Option(names = {"--additional-info"}, description = "Generate an additional text file with groupid:artifactname:version.")
         private boolean additionalInfo;
 
+        @Option(names = {"--email-friendly-format"}, description = """
+                When used in conjunction with --generate-artifact-list, entries in the additional text file
+                  are formatted in a more readable, email-friendly manner. This format includes details such as group ID, artifact ID,
+                  version, and a URL to the artifact. Each entry is separated by a separator to enhance clarity when viewed
+                  in an email""")
+        private boolean additionalFileEmailFriendlyFormat;
+
         @Override
         public Integer call() {
             AnsiLogger.info("Generating POM XML for JARs in: {}", folderPath);
@@ -91,7 +98,7 @@ public class JarManagerCLI implements Callable<Integer> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(outputPath), "Output path cannot be null or empty.");
             try {
                 // Call the POM generator utility
-                PomGenerator.generatePomEntries(Paths.get(folderPath), Paths.get(outputPath), additionalInfo);
+                PomGenerator.generatePomEntries(Paths.get(folderPath), Paths.get(outputPath), additionalInfo, additionalFileEmailFriendlyFormat);
             } catch (Exception e) {
                 AnsiLogger.error("Failed to generate POM XML: {}", e.getMessage());
                 logger.error("Failed to generate POM XML", e);

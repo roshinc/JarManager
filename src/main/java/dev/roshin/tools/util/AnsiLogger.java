@@ -1,5 +1,7 @@
 package dev.roshin.tools.util;
 
+import org.slf4j.Logger;
+
 public class AnsiLogger {
     private static final String RESET = "\u001B[0m";
     private static final String RED = "\u001B[31m";
@@ -30,6 +32,11 @@ public class AnsiLogger {
     }
 
     public static void warning(String template, Object... args) {
+        System.out.println(YELLOW + "[WARNING] " + RESET + formatTemplate(template, YELLOW, args));
+    }
+
+    public static void warning(Logger logger, String template, Object... args) {
+        logger.warn(template, args);
         System.out.println(YELLOW + "[WARNING] " + RESET + formatTemplate(template, YELLOW, args));
     }
 
