@@ -6,12 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ChangesFileUtil {
     private static ChangesFileUtil instance;
-    private final String changesFile;
+    private final Path changesFile;
     private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final Logger logger;
 
@@ -19,13 +21,13 @@ public class ChangesFileUtil {
         ADDED, UPDATED, SKIPPED
     }
 
-    private ChangesFileUtil(String changesFile) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(changesFile), "Changes file path cannot be null or empty.");
+    private ChangesFileUtil(Path changesFile) {
+        Preconditions.checkNotNull(changesFile, "Changes file path cannot be null or empty.");
         this.changesFile = changesFile;
         this.logger = LoggerFactory.getLogger(ChangesFileUtil.class);
     }
 
-    public static ChangesFileUtil getInstance(String changesFile) {
+    public static ChangesFileUtil getInstance(Path changesFile) {
         if (instance == null) {
             instance = new ChangesFileUtil(changesFile);
         }
@@ -50,7 +52,9 @@ public class ChangesFileUtil {
                 throw new IllegalArgumentException("Invalid action: " + action);
         }
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(changesFile, true))) {
+        try (BufferedWriter writer = Files.newBufferedWriter(changesFile,
+                Files.exists(changesFile) ? java.nio.file.StandardOpenOption.APPEND :
+                        java.nio.file.StandardOpenOption.CREATE)) {
             writer.write(entry);
             writer.newLine();
         } catch (IOException e) {
@@ -61,7 +65,7 @@ public class ChangesFileUtil {
     public String readChangesFile() {
         StringBuilder content = new StringBuilder();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(changesFile))) {
+        try (BufferedReader reader = Files.newBufferedReader(changesFile)) {
             String line;
             while ((line = reader.readLine()) != null) {
                 content.append(line).append(System.lineSeparator());
