@@ -1,6 +1,8 @@
 package dev.roshin.tools.pom_generator;
 
+import com.google.common.collect.Lists;
 import dev.roshin.tools.config.Config;
+import dev.roshin.tools.download_jars.domain.Artifact;
 import dev.roshin.tools.util.AnsiLogger;
 import dev.roshin.tools.util.CommonUtils;
 import org.slf4j.Logger;
@@ -12,6 +14,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.jar.JarFile;
 
@@ -83,10 +87,26 @@ public class PomGenerator {
      */
     private static void writeEntries(BufferedWriter writer, BufferedWriter additionalWriter, File[] files,
                                      boolean additionalFileEmailFriendlyFormat) throws IOException {
-        boolean showSourcesSkippedMessage = false;
+        List<Artifact> artifacts = createArtifactList(files);
+        for (Artifact artifact : artifacts) {
+
+            writePomEntry(writer, artifact);
+            if (additionalWriter != null) {
+                writeAdditionalEntry(additionalWriter, artifact, additionalFileEmailFriendlyFormat);
+            }
+        }
+    }
+
+    /**
+     * Creates a list of {@code Artifact}s from the specified array of {@code File}s.
+     *
+     * @param files The array of {@code File}s to create {@code Artifact}s from.
+     * @return A list of {@code Artifact}s created from the specified array of {@code File}s.
+     */
+    public static List<Artifact> createArtifactList(File[] files){
+        List<Artifact> artifacts = Lists.newArrayList();
         for (File file : files) {
             if (file.getName().contains("sources")) {
-                showSourcesSkippedMessage = true;
                 continue;
             }
             try (JarFile jar = new JarFile(file)) {
@@ -95,16 +115,26 @@ public class PomGenerator {
                     String groupId = props.getProperty("groupId");
                     String artifactId = props.getProperty("artifactId");
                     String version = props.getProperty("version");
-                    writePomEntry(writer, groupId, artifactId, version);
-                    if (additionalWriter != null) {
-                        writeAdditionalEntry(additionalWriter, groupId, artifactId, version, additionalFileEmailFriendlyFormat);
-                    }
+                    artifacts.add(new Artifact(groupId, artifactId, Optional.of(version)));
                 }
+            } catch (IOException e) {
+                AnsiLogger.error("An error occurred while processing JAR file: {}", file.getName());
+                logger.error("An error occurred while processing JAR file: {}", file.getName(), e);
             }
         }
-        if (showSourcesSkippedMessage) {
-            AnsiLogger.warning("Source JARs were skipped, as they would add duplicate entries to the POM.");
-        }
+        return artifacts;
+    }
+
+    /**
+     * Writes a POM dependency entry to the specified writer.
+     *
+     * @param writer     The writer to write the POM entry to.
+     * @param artifact   The {@code Artifact} to write the POM entry for.
+     * @throws IOException If an I/O error occurs while writing to the writer.
+     */
+    protected static void writePomEntry(BufferedWriter writer, Artifact artifact)
+            throws IOException{
+        writePomEntry(writer, artifact.groupId(), artifact.artifactId(), artifact.version().orElse("latest"));
     }
 
     /**
@@ -116,7 +146,8 @@ public class PomGenerator {
      * @param version    The version of the dependency.
      * @throws IOException If an I/O error occurs while writing to the writer.
      */
-    protected static void writePomEntry(BufferedWriter writer, String groupId, String artifactId, String version) throws IOException {
+    protected static void writePomEntry(BufferedWriter writer, String groupId, String artifactId, String version)
+            throws IOException {
         String xmlEntry = String.format("""
                  <dependency>
                  <groupId>%s</groupId>
@@ -125,6 +156,22 @@ public class PomGenerator {
                  </dependency>
                 """, groupId, artifactId, version);
         writer.write(xmlEntry);
+    }
+
+    /**
+     * Writes an additional entry with the URL of the dependency to the specified writer.
+     * If emailFriendlyFormat is true, the entry format is more detailed and includes a URL
+     * with a separator for clarity in emails. If false, the format is concise, suitable for file storage.
+     *
+     * @param writer              The writer to write the additional entry to.
+     * @param artifact             The {@code Artifact} to write the additional entry for.
+     * @param emailFriendlyFormat Whether to create the additional file in an email-friendly format.
+     * @throws IOException If an I/O error occurs while writing to the writer.
+     */
+    protected static void writeAdditionalEntry(BufferedWriter writer,Artifact artifact, boolean emailFriendlyFormat)
+            throws IOException {
+        writeAdditionalEntry(writer, artifact.groupId(), artifact.artifactId(), artifact.version()
+                .orElse("latest"), emailFriendlyFormat);
     }
 
     /**
