@@ -48,7 +48,7 @@ Options:
 
 * `--config <config_file_path>`: Specify the path to the configuration file (optional).
 * `--source-folder`: <source_folder_path>: Specify the target folder path for downloading source JARs (optional).
-* `--only-update`: Only replace the JARs that have a new version (optional).
+* `--update-different-only`: Only replace the JARs that have a different version (optional).
 * `--changes-file <changes_file_path>`: Specify the path to the changes text file that will be appended with the changes
   (optional).
 
@@ -107,7 +107,7 @@ jarmanager generate-pom /path/to/jar/folder /path/to/output/file.xml --generate-
 3. Download JARs listed in a file:
 
 ```shell
-jarmanager download /path/to/input/file.txt /path/to/target/folder --source-folder /path/to/source/folder --only-update --changes-file /path/to/changes/file.txt
+jarmanager download /path/to/input/file.txt /path/to/target/folder --source-folder /path/to/source/folder --update-different-only --changes-file /path/to/changes/file.txt
 ```
 
 4. Generate user libraries XML:

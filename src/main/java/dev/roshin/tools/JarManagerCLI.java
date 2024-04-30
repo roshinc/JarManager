@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.base.Verify;
 import dev.roshin.tools.config.Config;
+import dev.roshin.tools.download_jars.ArtifactDownloader;
 import dev.roshin.tools.pom_generator.PomGenerator;
 import dev.roshin.tools.util.AnsiLogger;
 import dev.roshin.tools.util.CommonUtils;
@@ -120,8 +121,8 @@ public class JarManagerCLI implements Callable<Integer> {
         @Option(names = {"--source-target-folder"}, description = "Path where source JAR files will be downloaded.")
         private String sourceTargetFolder;
 
-        @Option(names = {"--update-new-only"}, description = "Only replace JAR files if there is a newer version available.")
-        private boolean updateNewOnly;
+        @Option(names = {"--update-different-only"}, description = "Only replace JAR files if a different version was requested.")
+        private boolean updateDifferentOnly;
 
         @Option(names = {"--changes-log"}, description = "Path to the changes text file that will be appended to.")
         private String changesLog;
@@ -130,7 +131,18 @@ public class JarManagerCLI implements Callable<Integer> {
         public Integer call() {
             System.out.println("Downloading JARs based on specifications from: " + specFile);
             loadConfig();
-            // Add logic to download and manage JARs
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(specFile), "Spec path cannot be null or empty.");
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(targetFolder), "Output path cannot be null or empty.");
+            try {
+                // Call the JAR downloader utility
+                ArtifactDownloader.downloadArtifacts(Paths.get(specFile), Paths.get(targetFolder), sourceTargetFolder, updateDifferentOnly, Paths.get(changesLog));
+            } catch (Exception e) {
+                AnsiLogger.error("Failed to download JARs: {}", e.getMessage());
+                logger.error("Failed to download JARs", e);
+                return 1;
+            }
+
+
             return 0;
         }
     }
