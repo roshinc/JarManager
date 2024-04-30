@@ -19,6 +19,11 @@ public class AnsiLogger {
         System.out.println(BLUE + "[INFO] " + RESET + formatTemplate(template, BLUE, args));
     }
 
+    public static void info(Logger logger, String template, Object... args) {
+        logger.info(template, args);
+        System.out.println(BLUE + "[INFO] " + RESET + formatTemplate(template, BLUE, args));
+    }
+
     public static void success(String message) {
         System.out.println(GREEN + "[SUCCESS] " + message + RESET);
     }
@@ -45,6 +50,10 @@ public class AnsiLogger {
     }
 
     public static void error(String template, Object... args) {
+        System.out.println(RED + "[ERROR] " + RESET + formatTemplate(template, RED, args));
+    }
+    public static void error(Logger logger, String template, Object... args) {
+       logger.error(template, args);
         System.out.println(RED + "[ERROR] " + RESET + formatTemplate(template, RED, args));
     }
 
