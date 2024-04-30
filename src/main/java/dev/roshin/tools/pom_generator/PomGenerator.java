@@ -115,7 +115,7 @@ public class PomGenerator {
                     String groupId = props.getProperty("groupId");
                     String artifactId = props.getProperty("artifactId");
                     String version = props.getProperty("version");
-                    artifacts.add(new Artifact(groupId, artifactId, Optional.of(version)));
+                    artifacts.add(new Artifact(groupId, artifactId, Optional.of(version), Optional.of(file.toPath())));
                 }
             } catch (IOException e) {
                 AnsiLogger.error("An error occurred while processing JAR file: {}", file.getName());

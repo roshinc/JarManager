@@ -14,7 +14,21 @@ class JarManagerCLITest {
     @Test
     void mainTest_downloadJars() {
         //JarManagerCLI.main(new String[]{"-h"});
-        // download-jars C:\temp\hello.additional --target-folder C:\temp\target --source-target-folder C:\temp\source --changes-log C:\temp\changes.log
-        JarManagerCLI.main(new String[]{"download-jars", "C:\\temp\\hello.additional", "--target-folder", "C:\\temp\\target", "--source-target-folder", "C:\\temp\\source", "--changes-log", "C:\\temp\\changes.log", "--update-different-only"});
+        // download-jars C:\temp\hello.additional --target-folder C:\temp\target --source-target-folder
+        // C:\temp\source --changes-log C:\temp\changes.log
+        JarManagerCLI.main(new String[]{"download-jars", "C:\\temp\\hello.additional", "--target-folder",
+                "C:\\temp\\target", "--source-target-folder", "C:\\temp\\source",
+                "--changes-log", "C:\\temp\\changes.log", "--update-different-only"});
+    }
+
+
+    @Test
+    void mainTest_generateUserLibs() {
+        //JarManagerCLI.main(new String[]{"-h"});
+        // generate-userlibs C:\temp\hello.additional --output-xml C:\temp\output.xml --jars-path C:\temp\jars
+        // --jars-source-path C:\temp\source
+        JarManagerCLI.main(new String[]{"generate-userlibs", "C:\\temp\\hello.additional", "--output-xml",
+                "C:\\temp\\output.xml", "--jars-path", "C:\\temp\\target", "--jars-source-path", "C:\\temp\\sougrce",
+                "--changes-log", "C:\\temp\\changes.log"});
     }
 }

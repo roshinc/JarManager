@@ -6,6 +6,7 @@ import com.google.common.base.Verify;
 import dev.roshin.tools.config.Config;
 import dev.roshin.tools.download_jars.ArtifactDownloader;
 import dev.roshin.tools.pom_generator.PomGenerator;
+import dev.roshin.tools.userlibs_generator.UserLibsGenerator;
 import dev.roshin.tools.util.AnsiLogger;
 import dev.roshin.tools.util.CommonUtils;
 import org.fusesource.jansi.AnsiConsole;
@@ -135,7 +136,8 @@ public class JarManagerCLI implements Callable<Integer> {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(targetFolder), "Output path cannot be null or empty.");
             try {
                 // Call the JAR downloader utility
-                ArtifactDownloader.downloadArtifacts(Paths.get(specFile), Paths.get(targetFolder), sourceTargetFolder, updateDifferentOnly, Paths.get(changesLog));
+                ArtifactDownloader.downloadArtifacts(Paths.get(specFile), Paths.get(targetFolder), sourceTargetFolder,
+                        updateDifferentOnly, Paths.get(changesLog));
             } catch (Exception e) {
                 AnsiLogger.error("Failed to download JARs: {}", e.getMessage());
                 logger.error("Failed to download JARs", e);
@@ -149,26 +151,38 @@ public class JarManagerCLI implements Callable<Integer> {
 
     @Command(name = "generate-userlibs", description = "Generate user libraries XML.")
     static class GenerateUserLibs extends BaseCommand {
+        @Parameters(index = "0", description = "Path to the specification text file.")
+        private String specFile;
+
         @Option(names = {"--output-xml"}, description = "Path to output the user libraries XML file.", required = true)
         private String outputXml;
 
-        @Option(names = {"--download"}, description = "Download JAR files if needed.")
-        private boolean download;
+        @Option(names = {"--jars-path"}, description = "Path where JAR files are stored.", required = true)
+        private String jarsPath;
 
-        @Option(names = {"--no-overwrite"}, description = "Do not overwrite existing JAR files.")
-        private boolean noOverwrite;
+        @Option(names = {"--jars-source-path"}, description = "Path where source JAR files are stored.")
+        private String jarsSourcePath;
 
-        @Option(names = {"--jar-target-path"}, description = "Path where JAR files will be stored.")
-        private String jarTargetPath;
-
-        @Option(names = {"--jar-source-path"}, description = "Path where source JAR files will be stored.")
-        private String jarSourcePath;
+        @Option(names = {"--changes-log"}, description = "Path to the changes text file that will be appended to.")
+        private String changesLog;
 
         @Override
         public Integer call() {
             System.out.println("Generating user libraries XML to: " + outputXml);
             loadConfig();
             // Add logic to generate or manage XML and JAR files
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(specFile), "Spec path cannot be null or empty.");
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(outputXml), "Output path cannot be null or empty.");
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(jarsPath), "JAR target path cannot be null or empty.");
+            try {
+                // Call the user libraries generator utility
+                UserLibsGenerator.generateUserLibs(Paths.get(specFile), Paths.get(outputXml),
+                        Paths.get(jarsPath), jarsSourcePath, Paths.get(changesLog));
+            } catch (Exception e) {
+                AnsiLogger.error("Failed to generate user libraries XML: {}", e.getMessage());
+                logger.error("Failed to generate user libraries XML", e);
+                return 1;
+            }
             return 0;
         }
     }

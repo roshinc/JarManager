@@ -48,11 +48,13 @@ class ArtifactDownloaderTest {
 
     @Test
     void downloadArtifact() {
-        Artifact testArtifact = new Artifact("com.google.guava", "guava", Optional.empty());
+        Artifact testArtifact = new Artifact("com.google.guava", "guava", Optional.empty(),
+                Optional.empty());
 
         // Call the downloadArtifact method
         Optional<Artifact> downloadedArtifact = ArtifactDownloader.downloadArtifact(
-                testArtifact, null, false, "https://repo1.maven.org/maven2/com/google/guava/guava",
+                testArtifact, null, false,
+                "https://repo1.maven.org/maven2/com/google/guava/guava",
                 targetFolderPath, sourceTargetFolderPath, true, false, ""
         );
 
@@ -71,8 +73,8 @@ class ArtifactDownloaderTest {
     @Test
     void downloadArtifact_WithExistingArtifact() {
         // Create a test artifact and an existing artifact with the same version
-        Artifact testArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"));
-        Artifact existingArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"));
+        Artifact testArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"), Optional.empty());
+        Artifact existingArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"), Optional.empty());
 
         // Call the downloadArtifact method with replaceOnlyIfDifferent set to true
         Optional<Artifact> downloadedArtifact = ArtifactDownloader.downloadArtifact(
@@ -89,7 +91,8 @@ class ArtifactDownloaderTest {
     @Test
     void downloadArtifact_WithInvalidUrl() {
         // Create a test artifact with an invalid URL
-        Artifact testArtifact = new Artifact("com.example", "invalid-artifact", Optional.empty());
+        Artifact testArtifact = new Artifact("com.example", "invalid-artifact",
+                Optional.empty(), Optional.empty());
 
         // Call the downloadArtifact method with an invalid URL
         Optional<Artifact> downloadedArtifact = ArtifactDownloader.downloadArtifact(
@@ -205,7 +208,8 @@ class ArtifactDownloaderTest {
 
         // Act & Assert
         assertThrows(VerifyException.class, () -> {
-            ArtifactDownloader.downloadArtifacts(nonExistentSpecFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly, changesLogPath);
+            ArtifactDownloader.downloadArtifacts(nonExistentSpecFilePath, targetFolderPath, sourceTargetFolder,
+                    updateNewOnly, changesLogPath);
         });
     }
 
@@ -218,7 +222,8 @@ class ArtifactDownloaderTest {
 
         // Act & Assert
         assertThrows(VerifyException.class, () -> {
-            ArtifactDownloader.downloadArtifacts(specFilePath, nonExistentTargetFolderPath, sourceTargetFolder, updateNewOnly, changesLogPath);
+            ArtifactDownloader.downloadArtifacts(specFilePath, nonExistentTargetFolderPath, sourceTargetFolder,
+                    updateNewOnly, changesLogPath);
         });
     }
 
@@ -230,14 +235,15 @@ class ArtifactDownloaderTest {
 
         // Act & Assert
         assertThrows(VerifyException.class, () -> {
-            ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, nonExistentSourceTargetFolder, updateNewOnly, changesLogPath);
+            ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, nonExistentSourceTargetFolder,
+                    updateNewOnly, changesLogPath);
         });
     }
 
     @Test
     void createArtifactPath() {
         String baseUrl = "https://repo.example.com";
-        Artifact artifact = new Artifact("com.example", "my-artifact", Optional.empty());
+        Artifact artifact = new Artifact("com.example", "my-artifact", Optional.empty(), Optional.empty());
 
         String expectedPath = "https://repo.example.com/com/example/my-artifact";
         String actualPath = ArtifactDownloader.createArtifactPath(baseUrl, artifact);

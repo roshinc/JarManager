@@ -99,7 +99,8 @@ public class ArtifactDownloader {
                 String jarName = artifact.artifactId() + ".jar";
 
                 byte[] artifactData = client.execute(request, responseHandler);
-                try (FileOutputStream outstream = new FileOutputStream(targetFolderPath + "/" + jarName)) {
+                String jarPath = targetFolderPath + "/" + jarName;
+                try (FileOutputStream outstream = new FileOutputStream(jarPath)) {
                     outstream.write(artifactData);
                 }
 
@@ -125,7 +126,8 @@ public class ArtifactDownloader {
                 }
 
                 // Create the artifact response object
-                return Optional.of(new Artifact(artifact.groupId(), artifact.artifactId(), Optional.of(versionString)));
+                return Optional.of(new Artifact(artifact.groupId(), artifact.artifactId(),
+                        Optional.of(versionString),Optional.of(Paths.get(jarPath))));
             }
         } catch (Exception e) {
             AnsiLogger.error(logger, "Error downloading artifact: {}", e.getMessage());
@@ -255,12 +257,12 @@ public class ArtifactDownloader {
                     String groupId = parts[0].trim();
                     String artifactId = parts[1].trim();
                     // Assume version is the latest
-                    artifacts.add(new Artifact(groupId, artifactId, Optional.empty()));
+                    artifacts.add(new Artifact(groupId, artifactId, Optional.empty(), Optional.empty()));
                 } else if(parts.length == 3) {
                     String groupId = parts[0].trim();
                     String artifactId = parts[1].trim();
                     String version = parts[2].trim();
-                    artifacts.add(new Artifact(groupId, artifactId, Optional.of(version)));
+                    artifacts.add(new Artifact(groupId, artifactId, Optional.of(version), Optional.empty()));
                 } else {
                     AnsiLogger.warning(logger, "Invalid artifact entry: {}", artifactLine);
                 }
