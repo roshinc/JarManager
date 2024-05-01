@@ -6,10 +6,16 @@ import dev.roshin.tools.download_jars.domain.Artifact;
 import dev.roshin.tools.download_jars.domain.ArtifactPair;
 import dev.roshin.tools.pom_generator.PomGenerator;
 import dev.roshin.tools.util.AnsiLogger;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,10 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class UserLibsGenerator {
-    public static void generateUserLibs(Path specFIlePath, Path outputXml,
+public class UserLibrariesGenerator {
+    public static void generateUserLibs(String libraryName, Path specFIlePath, Path outputXml,
                                         Path jarsPath, String jarsSourcePath, Path changeLogFile) {
-        Logger logger = LoggerFactory.getLogger(UserLibsGenerator.class);
+        Logger logger = LoggerFactory.getLogger(UserLibrariesGenerator.class);
         logger.info("Starting UserLibs generation...");
         Preconditions.checkArgument(Files.exists(specFIlePath), "Spec file does not exist: "
                 + specFIlePath);
@@ -46,7 +52,7 @@ public class UserLibsGenerator {
             AnsiLogger.error("No JAR files found in target folder: {}", jarsPath);
             return;
         }
-        List<Artifact> artifacts = PomGenerator.createArtifactList(files);
+        List<Artifact> artifacts = PomGenerator.createArtifactList(files, true);
         List<Artifact> sourceArtifacts = null;
         if (includeSource) {
             File[] sourceFiles = sourcePath.toFile().listFiles((d, name) -> name.endsWith("-sources.jar"));
@@ -54,16 +60,55 @@ public class UserLibsGenerator {
                 AnsiLogger.error("No source JAR files found in source folder: {}", sourcePath);
                 return;
             }
-            sourceArtifacts = PomGenerator.createArtifactList(sourceFiles);
+            sourceArtifacts = PomGenerator.createArtifactList(sourceFiles, false);
         }
 
         // Match the JARs and its sources
         List<ArtifactPair> jarPairs = matchJarsAndSources(artifacts, sourceArtifacts);
 
-        UserLibrariesGenerator generator = new UserLibrariesGenerator();
-        generator.generateUserLibraries(jarPairs, outputXml, changeLogFile);
+        generateUserLibraries(jarPairs, libraryName, outputXml, changeLogFile);
 
 
+    }
+
+    public static void generateUserLibraries(List<ArtifactPair> artifactPairs, String libraryName, Path outputPath, Path changelogPath) {
+        Logger logger = LoggerFactory.getLogger(UserLibrariesGenerator.class);
+        Document document = new Document();
+        Element root = new Element("eclipse-userlibraries");
+        root.setAttribute("version", "2");
+        document.setRootElement(root);
+
+        Element library = new Element("library");
+        library.setAttribute("name", libraryName);
+        library.setAttribute("systemlibrary", "false");
+
+        for (ArtifactPair pair : artifactPairs) {
+            Artifact artifact = pair.artifact();
+            Optional<Artifact> sourceArtifact = pair.sourceArtifact();
+
+            String jarPath = artifact.localJarPath().map(path -> path.toString().replace("\\", "/")).orElse("");
+            String sourcePath = sourceArtifact.flatMap(Artifact::localJarPath).map(path -> path.toString().replace("\\", "/")).orElse("");
+
+            Element archive = new Element("archive");
+            archive.setAttribute("path", jarPath);
+            if (!sourcePath.isEmpty()) {
+                archive.setAttribute("source", sourcePath);
+            }
+            library.addContent(archive);
+        }
+
+        root.addContent(library);
+
+        XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
+        try (FileWriter writer = new FileWriter(outputPath.toFile())) {
+            outputter.output(document, writer);
+            AnsiLogger.info("User libraries file generated successfully: {}", outputPath);
+        } catch (IOException e) {
+            AnsiLogger.error("Error generating user libraries file: {}", e.getMessage());
+            logger.error("Error generating user libraries file", e);
+        }
+
+        // Add code to write changelog if needed
     }
 
     /**

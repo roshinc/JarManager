@@ -87,7 +87,7 @@ public class PomGenerator {
      */
     private static void writeEntries(BufferedWriter writer, BufferedWriter additionalWriter, File[] files,
                                      boolean additionalFileEmailFriendlyFormat) throws IOException {
-        List<Artifact> artifacts = createArtifactList(files);
+        List<Artifact> artifacts = createArtifactList(files, true);
         for (Artifact artifact : artifacts) {
 
             writePomEntry(writer, artifact);
@@ -103,10 +103,10 @@ public class PomGenerator {
      * @param files The array of {@code File}s to create {@code Artifact}s from.
      * @return A list of {@code Artifact}s created from the specified array of {@code File}s.
      */
-    public static List<Artifact> createArtifactList(File[] files){
+    public static List<Artifact> createArtifactList(File[] files, boolean filterOutSources) {
         List<Artifact> artifacts = Lists.newArrayList();
         for (File file : files) {
-            if (file.getName().contains("sources")) {
+            if (filterOutSources && file.getName().contains("sources")) {
                 continue;
             }
             try (JarFile jar = new JarFile(file)) {
@@ -128,12 +128,12 @@ public class PomGenerator {
     /**
      * Writes a POM dependency entry to the specified writer.
      *
-     * @param writer     The writer to write the POM entry to.
-     * @param artifact   The {@code Artifact} to write the POM entry for.
+     * @param writer   The writer to write the POM entry to.
+     * @param artifact The {@code Artifact} to write the POM entry for.
      * @throws IOException If an I/O error occurs while writing to the writer.
      */
     protected static void writePomEntry(BufferedWriter writer, Artifact artifact)
-            throws IOException{
+            throws IOException {
         writePomEntry(writer, artifact.groupId(), artifact.artifactId(), artifact.version().orElse("latest"));
     }
 
@@ -164,11 +164,11 @@ public class PomGenerator {
      * with a separator for clarity in emails. If false, the format is concise, suitable for file storage.
      *
      * @param writer              The writer to write the additional entry to.
-     * @param artifact             The {@code Artifact} to write the additional entry for.
+     * @param artifact            The {@code Artifact} to write the additional entry for.
      * @param emailFriendlyFormat Whether to create the additional file in an email-friendly format.
      * @throws IOException If an I/O error occurs while writing to the writer.
      */
-    protected static void writeAdditionalEntry(BufferedWriter writer,Artifact artifact, boolean emailFriendlyFormat)
+    protected static void writeAdditionalEntry(BufferedWriter writer, Artifact artifact, boolean emailFriendlyFormat)
             throws IOException {
         writeAdditionalEntry(writer, artifact.groupId(), artifact.artifactId(), artifact.version()
                 .orElse("latest"), emailFriendlyFormat);

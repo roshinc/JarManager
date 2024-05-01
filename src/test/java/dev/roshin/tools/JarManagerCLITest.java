@@ -27,8 +27,18 @@ class JarManagerCLITest {
         //JarManagerCLI.main(new String[]{"-h"});
         // generate-userlibs C:\temp\hello.additional --output-xml C:\temp\output.xml --jars-path C:\temp\jars
         // --jars-source-path C:\temp\source
-        JarManagerCLI.main(new String[]{"generate-userlibs", "C:\\temp\\hello.additional", "--output-xml",
-                "C:\\temp\\output.xml", "--jars-path", "C:\\temp\\target", "--jars-source-path", "C:\\temp\\sougrce",
+        JarManagerCLI.main(new String[]{"generate-userlibs", "test-lib", "C:\\temp\\hello.additional", "--output-xml",
+                "C:\\temp\\output.userlibraries", "--jars-path", "C:\\temp\\target", "--jars-source-path", "C:\\temp\\source",
                 "--changes-log", "C:\\temp\\changes.log"});
+    }
+
+    @Test
+    void mainTest_mergeUserLibs() {
+        JarManagerCLI.main(new String[]{
+                "combine-userlibs",
+                "C:\\temp\\output.userlibraries C:\\temp\\file.userlibraries",
+                "--output-xml",
+                "C:\\temp\\combined.userlibraries"
+        });
     }
 }

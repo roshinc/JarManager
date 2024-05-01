@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
 import dev.roshin.tools.config.Config;
-import dev.roshin.tools.config.util.MavenSettingsParser;
 import dev.roshin.tools.download_jars.domain.Artifact;
 import dev.roshin.tools.download_jars.util.MavenMetadataUtility;
 import dev.roshin.tools.pom_generator.PomGenerator;
@@ -18,7 +17,10 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,9 +45,9 @@ public class ArtifactDownloader {
      * @return The downloaded artifact.
      */
     protected static Optional<Artifact> downloadArtifact(final Artifact artifact, final Artifact existingArtifact,
-                                                       final boolean replaceOnlyIfDifferent, final String artifactPath,
-                                                       final Path targetFolderPath, final Path sourceTargetFolderPath,
-                                                       final boolean downloadSources, final boolean updateChangesLog,
+                                                         final boolean replaceOnlyIfDifferent, final String artifactPath,
+                                                         final Path targetFolderPath, final Path sourceTargetFolderPath,
+                                                         final boolean downloadSources, final boolean updateChangesLog,
                                                          final String apiKey) {
         Logger logger = LoggerFactory.getLogger(ArtifactDownloader.class);
 
@@ -60,7 +62,7 @@ public class ArtifactDownloader {
                 AnsiLogger.error(logger, "Failed to get the latest version of {}", artifact.artifactId());
                 return Optional.empty();
             }
-            AnsiLogger.info(logger,"Latest Version of {} is {}", artifact.artifactId(), versionString);
+            AnsiLogger.info(logger, "Latest Version of {} is {}", artifact.artifactId(), versionString);
         }
 
         // Check if the artifact of the same version already exists, if we need to replace only if different
@@ -127,7 +129,7 @@ public class ArtifactDownloader {
 
                 // Create the artifact response object
                 return Optional.of(new Artifact(artifact.groupId(), artifact.artifactId(),
-                        Optional.of(versionString),Optional.of(Paths.get(jarPath))));
+                        Optional.of(versionString), Optional.of(Paths.get(jarPath))));
             }
         } catch (Exception e) {
             AnsiLogger.error(logger, "Error downloading artifact: {}", e.getMessage());
@@ -184,7 +186,7 @@ public class ArtifactDownloader {
         // If we are updating only new files, get the current list of files in the target folder
         List<Artifact> existingArtifacts = Lists.newArrayList();
         if (updateDifferentOnly) {
-           // Get jar files in target folder
+            // Get jar files in target folder
             File dir = targetFolderPath.toFile();
             File[] files = dir.listFiles((d, name) -> name.endsWith(".jar"));
             if (files == null) {
@@ -192,7 +194,7 @@ public class ArtifactDownloader {
                         "update only flag is ignored", targetFolderPath);
             } else {
                 // Get artifacts in the target folder
-                existingArtifacts = PomGenerator.createArtifactList(files);
+                existingArtifacts = PomGenerator.createArtifactList(files, true);
                 // Remove existing artifacts from the list
                 // this only removes jars with versions, not the latest
                 artifacts.removeAll(existingArtifacts);
@@ -210,21 +212,21 @@ public class ArtifactDownloader {
                     .findFirst()
                     .orElse(null);
 
-            Optional<Artifact> downloadedArtifact = downloadArtifact(artifact,existingArtifact,
+            Optional<Artifact> downloadedArtifact = downloadArtifact(artifact, existingArtifact,
                     updateDifferentOnly, createArtifactPath(baseUrl, artifact), targetFolderPath, sourceTargetFolderPath,
-                    downloadSources,updateChangesLog, apiKey);
+                    downloadSources, updateChangesLog, apiKey);
         }
 
     }
 
 
     /*
-    * Creates the artifact path from the base URL and the artifact.
-    *
-    * @param baseUrl The base URL of the Maven repository.
-    * @param artifact The artifact to download.
-    *
-    * @return The path to the artifact.
+     * Creates the artifact path from the base URL and the artifact.
+     *
+     * @param baseUrl The base URL of the Maven repository.
+     * @param artifact The artifact to download.
+     *
+     * @return The path to the artifact.
      */
     protected static String createArtifactPath(String baseUrl, Artifact artifact) {
         return String.format("%s/%s", baseUrl,
@@ -248,7 +250,7 @@ public class ArtifactDownloader {
         // Example format: groupId:artifactId:version the version is optional
         // Example: com.google.guava:guava:30.1-jre
         // Example: com.google.guava:guava (latest version)
-        try(BufferedReader reader = Files.newBufferedReader(specFilePath);) {
+        try (BufferedReader reader = Files.newBufferedReader(specFilePath);) {
             String artifactLine;
 
             while ((artifactLine = reader.readLine()) != null) {
@@ -258,7 +260,7 @@ public class ArtifactDownloader {
                     String artifactId = parts[1].trim();
                     // Assume version is the latest
                     artifacts.add(new Artifact(groupId, artifactId, Optional.empty(), Optional.empty()));
-                } else if(parts.length == 3) {
+                } else if (parts.length == 3) {
                     String groupId = parts[0].trim();
                     String artifactId = parts[1].trim();
                     String version = parts[2].trim();

@@ -6,7 +6,8 @@ import com.google.common.base.Verify;
 import dev.roshin.tools.config.Config;
 import dev.roshin.tools.download_jars.ArtifactDownloader;
 import dev.roshin.tools.pom_generator.PomGenerator;
-import dev.roshin.tools.userlibs_generator.UserLibsGenerator;
+import dev.roshin.tools.userlibs_combiner.UserLibrariesMerger;
+import dev.roshin.tools.userlibs_generator.UserLibrariesGenerator;
 import dev.roshin.tools.util.AnsiLogger;
 import dev.roshin.tools.util.CommonUtils;
 import org.fusesource.jansi.AnsiConsole;
@@ -20,6 +21,7 @@ import picocli.CommandLine.Parameters;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 @Command(name = "jar-manager", mixinStandardHelpOptions = true,
@@ -27,7 +29,8 @@ import java.util.concurrent.Callable;
         subcommands = {
                 JarManagerCLI.GeneratePom.class,
                 JarManagerCLI.DownloadJars.class,
-                JarManagerCLI.GenerateUserLibs.class
+                JarManagerCLI.GenerateUserLibs.class,
+                JarManagerCLI.CombineUserLibs.class
         })
 public class JarManagerCLI implements Callable<Integer> {
 
@@ -151,7 +154,11 @@ public class JarManagerCLI implements Callable<Integer> {
 
     @Command(name = "generate-userlibs", description = "Generate user libraries XML.")
     static class GenerateUserLibs extends BaseCommand {
-        @Parameters(index = "0", description = "Path to the specification text file.")
+
+        @Parameters(index = "0", description = "Name of the user library.")
+        private String libraryName;
+
+        @Parameters(index = "1", description = "Path to the specification text file.")
         private String specFile;
 
         @Option(names = {"--output-xml"}, description = "Path to output the user libraries XML file.", required = true)
@@ -171,16 +178,45 @@ public class JarManagerCLI implements Callable<Integer> {
             System.out.println("Generating user libraries XML to: " + outputXml);
             loadConfig();
             // Add logic to generate or manage XML and JAR files
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(libraryName), "Library name cannot be null or empty.");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(specFile), "Spec path cannot be null or empty.");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(outputXml), "Output path cannot be null or empty.");
             Preconditions.checkArgument(!Strings.isNullOrEmpty(jarsPath), "JAR target path cannot be null or empty.");
             try {
                 // Call the user libraries generator utility
-                UserLibsGenerator.generateUserLibs(Paths.get(specFile), Paths.get(outputXml),
+                UserLibrariesGenerator.generateUserLibs(libraryName, Paths.get(specFile), Paths.get(outputXml),
                         Paths.get(jarsPath), jarsSourcePath, Paths.get(changesLog));
             } catch (Exception e) {
                 AnsiLogger.error("Failed to generate user libraries XML: {}", e.getMessage());
                 logger.error("Failed to generate user libraries XML", e);
+                return 1;
+            }
+            return 0;
+        }
+    }
+
+    @Command(name = "combine-userlibs", description = "Combine multiple user libraries XML files.")
+    static class CombineUserLibs extends BaseCommand {
+
+        @Parameters(index = "0", description = "Paths to the XML files to combine.", split = " ")
+        private Path[] xmls;
+
+        @Option(names = {"--output-xml"}, description = "Path to output the combined user libraries XML file.", required = true)
+        private String outputXml;
+
+        @Override
+        public Integer call() {
+            System.out.println("Combining user libraries XML files to: " + outputXml);
+            loadConfig();
+            // Add logic to combine XML files
+            Preconditions.checkArgument(xmls != null && xmls.length > 1, "At least two XML files are required to combine.");
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(outputXml), "Output path cannot be null or empty.");
+            try {
+                // Add logic to combine XML files
+                UserLibrariesMerger.mergeUserLibraries(Paths.get(outputXml), List.of(xmls));
+            } catch (Exception e) {
+                AnsiLogger.error("Failed to combine user libraries XML: {}", e.getMessage());
+                logger.error("Failed to combine user libraries XML", e);
                 return 1;
             }
             return 0;
