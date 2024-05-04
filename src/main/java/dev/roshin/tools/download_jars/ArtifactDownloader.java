@@ -109,9 +109,14 @@ public class ArtifactDownloader {
                 // Download the sources if required
                 if (downloadSources) {
                     URI sourcesUri = new URI(sourcesUrl);
-                    byte[] sourcesData = client.execute(new HttpGet(sourcesUri), responseHandler);
-                    try (FileOutputStream outstream = new FileOutputStream(sourceTargetFolderPath + "/"
-                            + artifact.artifactId() + "-sources.jar")) {
+                    HttpGet sourceRequest = new HttpGet(sourcesUri);
+                    sourceRequest.setHeader("X-JFrog-Art-Api", apiKey);
+
+                    String sourceJarName = artifact.artifactId() + "-sources.jar";
+
+                    byte[] sourcesData = client.execute(sourceRequest, responseHandler);
+                    String sourceJarPath = sourceTargetFolderPath + "/" + sourceJarName;
+                    try (FileOutputStream outstream = new FileOutputStream(sourceJarPath)) {
                         outstream.write(sourcesData);
                     }
                 }
