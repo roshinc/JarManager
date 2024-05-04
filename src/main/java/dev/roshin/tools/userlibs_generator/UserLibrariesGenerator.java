@@ -25,7 +25,7 @@ import java.util.Optional;
 
 public class UserLibrariesGenerator {
     public static void generateUserLibs(String libraryName, Path specFIlePath, Path outputXml,
-                                        Path jarsPath, String jarsSourcePath, Path changeLogFile) {
+                                        Path jarsPath, String jarsSourcePath, String changeLogFile) {
         Logger logger = LoggerFactory.getLogger(UserLibrariesGenerator.class);
         logger.info("Starting UserLibs generation...");
         Preconditions.checkArgument(Files.exists(specFIlePath), "Spec file does not exist: "
@@ -71,7 +71,7 @@ public class UserLibrariesGenerator {
 
     }
 
-    public static void generateUserLibraries(List<ArtifactPair> artifactPairs, String libraryName, Path outputPath, Path changelogPath) {
+    public static void generateUserLibraries(List<ArtifactPair> artifactPairs, String libraryName, Path outputPath, String changelogPath) {
         Logger logger = LoggerFactory.getLogger(UserLibrariesGenerator.class);
         Document document = new Document();
         Element root = new Element("eclipse-userlibraries");

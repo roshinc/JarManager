@@ -140,7 +140,7 @@ public class JarManagerCLI implements Callable<Integer> {
             try {
                 // Call the JAR downloader utility
                 ArtifactDownloader.downloadArtifacts(Paths.get(specFile), Paths.get(targetFolder), sourceTargetFolder,
-                        updateDifferentOnly, Paths.get(changesLog));
+                        updateDifferentOnly, changesLog);
             } catch (Exception e) {
                 AnsiLogger.error("Failed to download JARs: {}", e.getMessage());
                 logger.error("Failed to download JARs", e);
@@ -185,7 +185,7 @@ public class JarManagerCLI implements Callable<Integer> {
             try {
                 // Call the user libraries generator utility
                 UserLibrariesGenerator.generateUserLibs(libraryName, Paths.get(specFile), Paths.get(outputXml),
-                        Paths.get(jarsPath), jarsSourcePath, Paths.get(changesLog));
+                        Paths.get(jarsPath), jarsSourcePath, changesLog);
             } catch (Exception e) {
                 AnsiLogger.error("Failed to generate user libraries XML: {}", e.getMessage());
                 logger.error("Failed to generate user libraries XML", e);

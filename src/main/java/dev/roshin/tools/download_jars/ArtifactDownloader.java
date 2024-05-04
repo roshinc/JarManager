@@ -151,11 +151,11 @@ public class ArtifactDownloader {
      * @param targetFolderPath The target folder to download the artifacts.
      * @param sourceTargetFolder The target folder to download the sources.
      * @param updateDifferentOnly Replace the existing artifacts only if different.
-     * @param changesLogPath The path to the changes log file.
+     * @param changesLogPathString The path to the changes log file.
      */
     public static void downloadArtifacts(final Path specFilePath, final Path targetFolderPath,
                                          final String sourceTargetFolder, final boolean updateDifferentOnly,
-                                         final Path changesLogPath) {
+                                         final String changesLogPathString) {
         Logger logger = LoggerFactory.getLogger(ArtifactDownloader.class);
 
         // Check if spec file exists
@@ -181,7 +181,8 @@ public class ArtifactDownloader {
 
         // We only need to update the changelog if the changesLogPath is not null
         boolean updateChangesLog = false;
-        if (changesLogPath != null) {
+        if (!Strings.isNullOrEmpty(changesLogPathString)) {
+            Path changesLogPath = Paths.get(changesLogPathString);
             updateChangesLog = true;
             Verify.verify(Files.exists(changesLogPath.getParent()), "Changes log file does " +
                     "not exist: %s", changesLogPath);
