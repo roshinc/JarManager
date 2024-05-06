@@ -51,6 +51,7 @@ Options:
 * `--update-different-only`: Only replace the JARs that have a different version (optional).
 * `--changes-file <changes_file_path>`: Specify the path to the changes text file that will be appended with the changes
   (optional).
+* `--use-remote-name` : Use the remote file name for the downloaded file (optional).
 
 ### 3. Generate User Libraries XML
 

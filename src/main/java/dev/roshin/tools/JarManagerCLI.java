@@ -128,6 +128,12 @@ public class JarManagerCLI implements Callable<Integer> {
         @Option(names = {"--update-different-only"}, description = "Only replace JAR files if a different version was requested.")
         private boolean updateDifferentOnly;
 
+        @Option(names = {"--use-remote-name"}, description = "Names the jar files based on the remote file name. Might result in duplicate jars.")
+        private boolean useRemoteName;
+
+        @Option(names = {"--explicit-delete"}, description = "Delete artifacts before downloading new ones, even if the name is different.")
+        private boolean explicitDelete;
+
         @Option(names = {"--changes-log"}, description = "Path to the changes text file that will be appended to.")
         private String changesLog;
 
@@ -140,7 +146,7 @@ public class JarManagerCLI implements Callable<Integer> {
             try {
                 // Call the JAR downloader utility
                 ArtifactDownloader.downloadArtifacts(Paths.get(specFile), Paths.get(targetFolder), sourceTargetFolder,
-                        updateDifferentOnly, changesLog);
+                        updateDifferentOnly, changesLog, useRemoteName, explicitDelete);
             } catch (Exception e) {
                 AnsiLogger.error("Failed to download JARs: {}", e.getMessage());
                 logger.error("Failed to download JARs", e);

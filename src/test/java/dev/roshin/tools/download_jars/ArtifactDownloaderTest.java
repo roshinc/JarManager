@@ -29,8 +29,6 @@ class ArtifactDownloaderTest {
     private Path changesLogPath;
 
 
-
-
     @BeforeEach
     void setUp() throws IOException {
         targetFolderPath = tempDir.resolve("target");
@@ -52,11 +50,13 @@ class ArtifactDownloaderTest {
                 Optional.empty());
 
         // Call the downloadArtifact method
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
         Optional<Artifact> downloadedArtifact = ArtifactDownloader.downloadArtifact(
                 testArtifact, null, false,
                 "https://repo1.maven.org/maven2/com/google/guava/guava",
-                targetFolderPath, sourceTargetFolderPath, true, false, ""
-        );
+                targetFolderPath, sourceTargetFolderPath, true, false, "",
+                useRemoteName, explicitDelete);
 
         // Assert that the artifact was downloaded successfully
         assertTrue(downloadedArtifact.isPresent());
@@ -73,14 +73,18 @@ class ArtifactDownloaderTest {
     @Test
     void downloadArtifact_WithExistingArtifact() {
         // Create a test artifact and an existing artifact with the same version
-        Artifact testArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"), Optional.empty());
-        Artifact existingArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"), Optional.empty());
+        Artifact testArtifact = new Artifact("com.example", "test-artifact", Optional.of("1.0.0"),
+                Optional.empty());
+        Artifact existingArtifact = new Artifact("com.example", "test-artifact",
+                Optional.of("1.0.0"), Optional.empty());
 
         // Call the downloadArtifact method with replaceOnlyIfDifferent set to true
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
         Optional<Artifact> downloadedArtifact = ArtifactDownloader.downloadArtifact(
                 testArtifact, existingArtifact, true, "com/example/test-artifact",
-                targetFolderPath, sourceTargetFolderPath, false, false, ""
-        );
+                targetFolderPath, sourceTargetFolderPath, false, false, "",
+                useRemoteName, explicitDelete);
 
         // Assert that the existing artifact was returned
         assertTrue(downloadedArtifact.isPresent());
@@ -95,10 +99,12 @@ class ArtifactDownloaderTest {
                 Optional.empty(), Optional.empty());
 
         // Call the downloadArtifact method with an invalid URL
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
         Optional<Artifact> downloadedArtifact = ArtifactDownloader.downloadArtifact(
                 testArtifact, null, false, "com/example/invalid-artifact",
-                targetFolderPath, sourceTargetFolderPath, false, false,"your-api-key"
-        );
+                targetFolderPath, sourceTargetFolderPath, false, false,
+                "your-api-key", useRemoteName, explicitDelete);
 
         // Assert that the artifact download failed
         assertFalse(downloadedArtifact.isPresent());
@@ -109,10 +115,14 @@ class ArtifactDownloaderTest {
         // Arrange
         String sourceTargetFolder = sourceTargetFolderPath.toString();
         boolean updateNewOnly = false;
-        Files.writeString(specFilePath, "com.google.guava:guava:33.1.0-jre\norg.jetbrains.kotlinx:kotlinx-serialization-json-jvm");
+        Files.writeString(specFilePath, "com.google.guava:guava:33.1.0-jre\norg.jetbrains.kotlinx:kotlinx-" +
+                "serialization-json-jvm");
 
         // Act
-        ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly, changesLogPath);
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
+        ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly,
+                changesLogPath.toString(), useRemoteName, explicitDelete);
 
         // Assert
         assertTrue(Files.exists(targetFolderPath.resolve("kotlinx-serialization-json-jvm.jar")));
@@ -150,7 +160,10 @@ class ArtifactDownloaderTest {
         long existingArtifactUpdateTime = Files.getLastModifiedTime(jarPath).toMillis();
 
         // Act
-        ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly, changesLogPath);
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
+        ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly,
+                changesLogPath.toString(), useRemoteName, explicitDelete);
 
         // Assert
         assertTrue(Files.exists(targetFolderPath.resolve("test.jar")));
@@ -158,7 +171,7 @@ class ArtifactDownloaderTest {
         long updatedArtifactUpdateTime = Files.getLastModifiedTime(jarPath).toMillis();
         assertEquals(existingArtifactUpdateTime, updatedArtifactUpdateTime);
 
-       // There were no changes, so the changes log file should not exist
+        // There were no changes, so the changes log file should not exist
         assertFalse(Files.exists(changesLogPath));
     }
 
@@ -186,7 +199,10 @@ class ArtifactDownloaderTest {
         long existingArtifactUpdateTime = Files.getLastModifiedTime(jarPath).toMillis();
 
         // Act
-        ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly, changesLogPath);
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
+        ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, sourceTargetFolder, updateNewOnly,
+                changesLogPath.toString(), useRemoteName, explicitDelete);
 
         // Assert
         assertTrue(Files.exists(targetFolderPath.resolve("guava.jar")));
@@ -207,9 +223,11 @@ class ArtifactDownloaderTest {
         boolean updateNewOnly = false;
 
         // Act & Assert
+        boolean useRemoteName = false;
+        boolean explicitDelete = false;
         assertThrows(VerifyException.class, () -> {
             ArtifactDownloader.downloadArtifacts(nonExistentSpecFilePath, targetFolderPath, sourceTargetFolder,
-                    updateNewOnly, changesLogPath);
+                    updateNewOnly, changesLogPath.toString(), useRemoteName, explicitDelete);
         });
     }
 
@@ -222,8 +240,10 @@ class ArtifactDownloaderTest {
 
         // Act & Assert
         assertThrows(VerifyException.class, () -> {
+            boolean useRemoteName = false;
+            boolean explicitDelete = false;
             ArtifactDownloader.downloadArtifacts(specFilePath, nonExistentTargetFolderPath, sourceTargetFolder,
-                    updateNewOnly, changesLogPath);
+                    updateNewOnly, changesLogPath.toString(), useRemoteName, explicitDelete);
         });
     }
 
@@ -235,8 +255,10 @@ class ArtifactDownloaderTest {
 
         // Act & Assert
         assertThrows(VerifyException.class, () -> {
+            boolean useRemoteName = false;
+            boolean explicitDelete = false;
             ArtifactDownloader.downloadArtifacts(specFilePath, targetFolderPath, nonExistentSourceTargetFolder,
-                    updateNewOnly, changesLogPath);
+                    updateNewOnly, changesLogPath.toString(), useRemoteName, explicitDelete);
         });
     }
 

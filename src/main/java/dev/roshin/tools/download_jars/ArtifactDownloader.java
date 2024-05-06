@@ -41,6 +41,8 @@ public class ArtifactDownloader {
      * @param sourceTargetFolderPath The target folder to download the sources.
      * @param downloadSources Download the sources.
      * @param apiKey The API key to access the Maven repository.
+     * @param useRemoteName Use the remote name for the downloaded artifact.
+     * @param explicitDelete Explicitly delete the existing artifact.
      *
      * @return The downloaded artifact.
      */
@@ -48,7 +50,7 @@ public class ArtifactDownloader {
                                                          final boolean replaceOnlyIfDifferent, final String artifactPath,
                                                          final Path targetFolderPath, final Path sourceTargetFolderPath,
                                                          final boolean downloadSources, final boolean updateChangesLog,
-                                                         final String apiKey) {
+                                                         final String apiKey, boolean useRemoteName, boolean explicitDelete) {
         Logger logger = LoggerFactory.getLogger(ArtifactDownloader.class);
 
         logger.info("Requested version of {} is {}", artifact.artifactId(), artifact.version());
@@ -73,9 +75,23 @@ public class ArtifactDownloader {
             return Optional.of(existingArtifact);
         }
 
+        //Delete the existing artifact
+        if (existingArtifact != null && existingArtifact.localJarPath().isPresent() && explicitDelete) {
+            try {
+                Files.deleteIfExists(existingArtifact.localJarPath().get());
+                AnsiLogger.info(logger, "Deleted existing artifact: {}", existingArtifact.localJarPath().get());
+            } catch (IOException e) {
+                AnsiLogger.error(logger, "Failed to delete existing artifact: {}", e.getMessage());
+                logger.error("Failed to delete existing artifact", e);
+                return Optional.empty();
+            }
+        }
+
+        // The remote name is the artifact name with the version
+        String remoteName = artifact.artifactId() + "-" + versionString + ".jar";
+
         // Url to download the artifact
-        String downloadUrl = String.format("%s/%s/%s-%s.jar", artifactPath, versionString, artifact.artifactId(),
-                versionString);
+        String downloadUrl = String.format("%s/%s/%s", artifactPath, versionString, remoteName);
         logger.info("Downloading artifact from {}", downloadUrl);
 
         // Url to download the artifact sources
@@ -98,7 +114,8 @@ public class ArtifactDownloader {
                 HttpGet request = new HttpGet(downloadUri);
                 request.setHeader("X-JFrog-Art-Api", apiKey);
 
-                String jarName = artifact.artifactId() + ".jar";
+                // The jar name is the artifact name with the jar extension or the remote name
+                String jarName = useRemoteName ? remoteName : artifact.artifactId() + ".jar";
 
                 byte[] artifactData = client.execute(request, responseHandler);
                 String jarPath = targetFolderPath + "/" + jarName;
@@ -152,10 +169,13 @@ public class ArtifactDownloader {
      * @param sourceTargetFolder The target folder to download the sources.
      * @param updateDifferentOnly Replace the existing artifacts only if different.
      * @param changesLogPathString The path to the changes log file.
+     * @param useRemoteName Use the remote name for the downloaded artifacts.
+     * @param explicitDelete Explicitly delete the existing artifacts.
+     *
      */
     public static void downloadArtifacts(final Path specFilePath, final Path targetFolderPath,
                                          final String sourceTargetFolder, final boolean updateDifferentOnly,
-                                         final String changesLogPathString) {
+                                         final String changesLogPathString, boolean useRemoteName, boolean explicitDelete) {
         Logger logger = LoggerFactory.getLogger(ArtifactDownloader.class);
 
         // Check if spec file exists
@@ -220,7 +240,7 @@ public class ArtifactDownloader {
 
             Optional<Artifact> downloadedArtifact = downloadArtifact(artifact, existingArtifact,
                     updateDifferentOnly, createArtifactPath(baseUrl, artifact), targetFolderPath, sourceTargetFolderPath,
-                    downloadSources, updateChangesLog, apiKey);
+                    downloadSources, updateChangesLog, apiKey, useRemoteName, explicitDelete);
         }
 
     }
